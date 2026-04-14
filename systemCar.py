@@ -1,4 +1,4 @@
-import os
+
 import sqlite3
 
 nome_banco = 'banco_peca.db'
@@ -30,6 +30,7 @@ def criar_banco():
     ''')
 
     # garantir caixa aberta
+
     cursor.execute("SELECT * FROM caixas WHERE status_caixa = 'aberta'")
     if cursor.fetchone() is None:
         cursor.execute("INSERT INTO caixas (status_caixa) VALUES ('aberta')")
@@ -71,6 +72,7 @@ def cadastrar_peca():
     peso = float(input("Peso: "))
     cor = input("Cor: ")
     comprimento = float(input("Comprimento: "))
+
     aprovada, status = validar_peca(peso, cor, comprimento)
     id_caixa = None
 
@@ -105,10 +107,9 @@ def cadastrar_peca():
 
     print("Resultado:", status)
 
-
-# =========================
 # LISTAR PEÇAS
-# =========================
+
+
 def listar_pecas():
     conexao = sqlite3.connect(nome_banco)
     cursor = conexao.cursor()
@@ -120,9 +121,9 @@ def listar_pecas():
     opcao = input("Escolha: ")
 
     if opcao == "1":
-        cursor.execute("SELECT * FROM pecas WHERE status = 'Aprovada'")
+        cursor.execute("SELECT * FROM pecas WHERE aprovada = 1")
     elif opcao == "2":
-        cursor.execute("SELECT * FROM pecas WHERE status != 'Aprovada'")
+        cursor.execute("SELECT * FROM pecas WHERE aprovada = 0")
     else:
         print("Opção inválida!")
         conexao.close()
@@ -150,10 +151,7 @@ def listar_pecas():
     conexao.close()
     input("\nPressione Enter...")
 
-
-# =========================
 # REMOVER PEÇA
-# =========================
 
 
 def remover_peca():
@@ -173,57 +171,72 @@ def remover_peca():
     conexao.close()
 
 
-# =========================
-# LISTAR CAIXAS
-# =========================
+# LISTAR CAIXA
 
 def listar_caixas():
     conexao = sqlite3.connect(nome_banco)
     cursor = conexao.cursor()
 
-    cursor.execute("SELECT * FROM caixas WHERE status_caixa = 'fechada'")
+    cursor.execute("""
+        SELECT c.id, c.status_caixa, COUNT(p.id_peca)
+        FROM caixas c
+        LEFT JOIN pecas p ON c.id = p.caixa_id
+        GROUP BY c.id
+    """)
+
     caixas = cursor.fetchall()
 
-    print("\n--- CAIXAS FECHADAS ---")
+    print("\n--- LISTA DE CAIXAS ---")
 
-    if len(caixas) == 0:
-        print("Nenhuma caixa fechada ainda")
+    if not caixas:
+        print("Nenhuma caixa encontrada")
     else:
         for c in caixas:
-            print(f"Caixa {c[0]} está fechada")
+            print("\n----------------------")
+            print(f"Caixa ID: {c[0]}")
+            print(f"Status: {c[1]}")
+            print(f"Peças: {c[2]}")
 
     conexao.close()
 
 
-# =========================
 # RELATÓRIO
-# =========================
-
 def relatorio():
     conexao = sqlite3.connect(nome_banco)
     cursor = conexao.cursor()
 
+    # Total de peças
+    cursor.execute("SELECT COUNT(*) FROM pecas")
+    total = cursor.fetchone()[0]
+
+    # Aprovadas
     cursor.execute("SELECT COUNT(*) FROM pecas WHERE aprovada = 1")
     aprovadas = cursor.fetchone()[0]
 
+    # Reprovadas
     cursor.execute("SELECT COUNT(*) FROM pecas WHERE aprovada = 0")
     reprovadas = cursor.fetchone()[0]
 
+    # Caixas fechadas
     cursor.execute(
         "SELECT COUNT(*) FROM caixas WHERE status_caixa = 'fechada'")
-    caixas = cursor.fetchone()[0]
+    caixas_fechadas = cursor.fetchone()[0]
+
+    # Caixas abertas
+    cursor.execute("SELECT COUNT(*) FROM caixas WHERE status_caixa = 'aberta'")
+    caixas_abertas = cursor.fetchone()[0]
 
     print("\n--- RELATÓRIO ---")
-    print("Aprovadas:", aprovadas)
-    print("Reprovadas:", reprovadas)
-    print("Caixas fechadas:", caixas)
+    print(f"Total de peças: {total}")
+    print(f"Aprovadas: {aprovadas}")
+    print(f"Reprovadas: {reprovadas}")
+    print(f"Caixas abertas: {caixas_abertas}")
+    print(f"Caixas fechadas: {caixas_fechadas}")
 
     conexao.close()
 
 
-# =========================
 # MENU
-# =========================
 
 def app():
     criar_banco()
