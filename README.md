@@ -164,4 +164,4 @@ Essa separação facilita manutenção, escalabilidade e organização do códig
 ### 🔹 1. Clone o repositório
 
 ```bash
-git clone https://github.com/seu-usuario/seu-repositorio.gitgit 
+git clone https://github.com/bohrluc/sistema-de-gest-o-de-pe-as-/edit/main/README.md
